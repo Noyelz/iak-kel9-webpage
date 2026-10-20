@@ -1,0 +1,67 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="container hero-grid">
+        <div>
+            <p class="eyebrow">ASURANSI ANALYTICS</p>
+            <h1>Dari data,<br>menjadi pemahaman.</h1>
+            <p class="lead">
+                Jelajahi data asuransi melalui ringkasan, visualisasi, dan detail dalam satu platform.
+            </p>
+            <div class="hero-actions">
+                <a class="button" href="{% url 'dashboard' %}">
+                    Buka dashboard <span aria-hidden="true"></span>
+                </a>
+                <a class="text-link" href="#tentang">Kenali platform</a>
+            </div>
+
+            <p class="muted">Masuk dengan akun untuk mengakses dashboard</p>
+        </div>
+        
+        <aside class="preview" aria-label="Gambaran fitur dashboard">
+            <div class="preview-heading">
+                <span class="eyebrow">ANALISIS</span>
+                <span class="badge">Pratinjau</span>
+            </div>
+
+            <h2>Perspektif baru dari setiap data.</h2>
+            <p class="muted">
+                Temukan informasi utama dan pahami pola melalui tampilan yang terstruktur.
+            </p>
+
+            <div class="feature-row">
+                <span class="feature-number">01</span>
+                <div>
+                    <h3>Ringkasan indikator</h3>
+                    <p>Kenali gambaran umum dari data yang dianalisis.</p>
+                </div>
+            </div>
+            <div class="feature-row">
+                <span class="feature-number">02</span>
+                <div>
+                    <h3>Visualisasi data</h3>
+                    <p>Amati pola dan perbandingan dengan lebih jelas.</p>
+                </div>
+            </div>
+            <div class="feature-row">
+                <span class="feature-number">03</span>
+                <div>
+                    <h3>Telusuri detail</h3>
+                    <p>lihat data yang mendasari hasil analisis</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+</section>
+
+<section class="container about" id="tentang">
+    <p class="eyebrow">tentang platform</p>
+    <h2>Satu tempat untuk memahami gambaran yang lebih utuh.</h2>
+    <p class="lead">
+        Platform analitik untuk membantu pengguna membaca data secara terstruktur, dari gambaran umum hingga detail.
+    </p>
+</section>
+{% endblock %}

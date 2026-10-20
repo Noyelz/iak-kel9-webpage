@@ -1,0 +1,77 @@
+# Berlaku juga jika folder iak-kel9-webpage menjadi root repository sendiri.
+# Kredensial dan konfigurasi lokal
+.env
+.env.*
+!.env.example
+!.env.template
+analytics.local.json
+*.key
+*.p12
+*.pfx
+
+# Virtual environment dan cache Python
+.venv/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Database lokal, dump data, dan backup
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+iak_dw.sql
+*.sql.gz
+*.sql.bz2
+*.dump
+backups/
+backup/
+*.bak
+
+# Hasil collectstatic dan unggahan lokal; folder dashboard/static tetap dilacak
+staticfiles/
+media/
+
+# Log dan file sementara
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.*-qa.*
+.qa-*
+
+# Pengaturan editor/OS pribadi
+.vscode/
+.idea/
+.vs/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Installer hasil build; distribusikan melalui GitHub Releases
+Setup.exe
+*.spec
+
+# Dokumentasi pribadi: tetap disimpan lokal
+/HASIL_ETL_DAN_LOGIKA.md
+/INTEGRASI_DATABASE.md
+/dashboard/static/dashboard/maps/ATTRIBUTION.md

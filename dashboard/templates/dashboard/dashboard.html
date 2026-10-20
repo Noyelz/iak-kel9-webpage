@@ -1,0 +1,117 @@
+{% extends "dashboard/base.html" %}
+{% load static data_format %}
+{% block title %}Dashboard | Asuransi Analytics{% endblock %}
+{% block content %}
+<div class="workspace">
+    <div class="container dashboard-shell">
+        <div class="dashboard-heading">
+            <div><p class="eyebrow">OVERVIEW / ANALITIK INDUSTRI</p><h1>Data yang saling bercerita.</h1><p class="muted">Halo, {{ user.username }}. Telusuri industri asuransi dalam konteks ekonomi dan demografi.</p></div>
+            {% if analytics.status == 'ready' %}
+            <form class="year-filter" method="get">
+                <label for="tahun">Tahun analisis</label>
+                <div><select id="tahun" name="tahun">{% for year in analytics.years %}<option value="{{ year }}" {% if year == analytics.year %}selected{% endif %}>{{ year }}</option>{% endfor %}</select><button class="button" type="submit">Terapkan</button></div>
+            </form>
+            {% endif %}
+        </div>
+        {% if analytics.status == 'ready' %}
+        <nav class="section-nav" aria-label="Bagian analisis"><a href="#ringkasan">Ringkasan</a><a href="#tren">Tren asuransi</a><a href="#lintas-sumber">Lintas sumber</a><a href="#peta-penduduk">Peta penduduk</a><a href="#konteks">Industri & demografi</a><a href="#indikator">Semua indikator BI</a><a href="#detail">Detail data</a><a href="{% url 'warehouse' %}">9 tabel lengkap ↗</a></nav>
+        <div class="scope-strip"><span class="badge">ASURANSI JIWA · PAJ</span><span>Nasional · {{ analytics.year }} · OJK / BI / BPS</span><span>Posisi keuangan & premi: Desember</span></div>
+        {% if not analytics.annual_complete %}<p class="data-note">Data Desember belum lengkap. Nilai yang belum tersedia ditampilkan sebagai tanda —.</p>{% endif %}
+        <section id="ringkasan" aria-label="Ringkasan tahunan">
+            <div class="analytics-cards">{% for card in analytics.cards %}<article class="metric-card"><p>{{ card.label }}</p><h2>{% if card.value != None %}{{ card.value|floatformat:2 }}{% else %}—{% endif %}</h2><span>{{ card.unit }}</span></article>{% endfor %}</div>
+        </section>
+        <section id="tren">
+            <div class="section-title"><div><p class="eyebrow">01 / TREN ASURANSI JIWA</p><h2>Dari bulan ke bulan.</h2></div><p>Data OJK · {{ analytics.year }}</p></div>
+            <div class="chart-grid">
+                <article class="chart-card chart-wide">
+                    <div class="chart-heading"><div><h3>Premi dan klaim</h3><p>Rp triliun · {{ analytics.year }}</p></div><div class="segmented" role="group" aria-label="Mode premi dan klaim"><button type="button" class="active" data-mode="monthly" aria-pressed="true">Bulanan</button><button type="button" data-mode="ytd" aria-pressed="false">Kumulatif YTD</button></div></div>
+                    <div id="premium-chart" class="chart-host"></div>
+                    <p class="chart-footnote" id="premium-note">Nilai bulanan = selisih YTD antarbulan pada tahun yang sama. Januari = nilai YTD Januari.</p>
+                </article>
+                <article class="chart-card"><div class="chart-heading"><div><h3>Posisi keuangan</h3><p>Rp triliun · nilai pada akhir setiap bulan</p></div></div><div id="finance-chart" class="chart-host"></div><p class="chart-footnote">Aset, investasi, liabilitas, dan ekuitas adalah snapshot. Liabilitas Jan–Okt 2023 tidak diplot karena masalah sumber; nilai aslinya tersedia pada tabel lengkap.</p></article>
+                <article class="chart-card"><div class="chart-heading"><div><h3>Klaim terhadap premi</h3><p>Persen · perbandingan nilai kumulatif YTD</p></div></div><div id="ratio-chart" class="chart-host"></div><p class="chart-footnote">Klaim YTD ÷ premi YTD × 100%. Rasio ini bukan ukuran laba atau kesehatan perusahaan.</p></article>
+            </div>
+        </section>
+        <section id="lintas-sumber">
+            <div class="section-title"><div><p class="eyebrow">02 / ANALISIS LINTAS SUMBER</p><h2>Melihat konteks yang lebih luas.</h2></div><p>Perbandingan seluruh tahun tersedia</p></div>
+            <div class="cross-metrics">
+                <div><span>Premi per penduduk · {{ analytics.year }}</span><strong>{% if analytics.density != None %}Rp {{ analytics.density|floatformat:0 }}{% else %}—{% endif %}</strong><small>OJK × BPS · per orang per tahun</small></div>
+                <div><span>Penduduk Indonesia · {{ analytics.year }}</span><strong>{% if analytics.population != None %}{{ analytics.population|floatformat:2 }} juta{% else %}—{% endif %}</strong><small>BPS · menggunakan baris nasional</small></div>
+                <div><span>Investasi terhadap aset · {{ analytics.year }}</span><strong>{% if analytics.investment_share != None %}{{ analytics.investment_share|floatformat:2 }}%{% else %}—{% endif %}</strong><small>OJK · posisi Desember</small></div>
+            </div>
+            <div class="chart-grid">
+                <article class="chart-card"><div class="chart-heading"><div><span class="source-tag">OJK + BPS</span><h3>Premi Asuransi Jiwa per penduduk</h3><p>Rp/orang/tahun · seluruh tahun tersedia</p></div></div><div id="density-chart" class="chart-host"></div><p class="chart-footnote">Premi Desember ÷ penduduk nasional (ribu jiwa × 1.000). Bukan rata-rata premi nasabah atau persentase kepesertaan.</p></article>
+                <article class="chart-card"><div class="chart-heading"><div><span class="source-tag">OJK + BI</span><h3>Pertumbuhan premi & kondisi ekonomi</h3><p>Persen · seluruh tahun tersedia</p></div></div><div id="macro-chart" class="chart-host"></div><p class="chart-footnote">Pertumbuhan premi membandingkan Desember dengan Desember tahun sebelumnya. Tahun awal tanpa pembanding ditampilkan kosong. Tiga tahun pengamatan bersifat deskriptif dan tidak membuktikan sebab-akibat.</p></article>
+            </div>
+        </section>
+        <section id="peta-penduduk" class="population-map-section">
+            <div class="section-title"><div><p class="eyebrow">PETA / PERSEBARAN PENDUDUK</p><h2>Indonesia dalam gradasi hijau.</h2></div><p>BPS · jumlah penduduk · {{ analytics.year }}</p></div>
+            <article class="chart-card map-card">
+                <div class="chart-heading"><div><h3>Jumlah penduduk menurut provinsi</h3><p>Semakin gelap warna hijau, semakin besar jumlah penduduk. Rentang warna sama untuk semua tahun.</p></div><span class="badge">{{ analytics.population_map.available }}/38 provinsi memiliki data</span></div>
+                <div class="map-layout">
+                    <div class="map-area">
+                        <div class="map-toolbar" role="group" aria-label="Kontrol tampilan peta"><button type="button" id="map-zoom-in" aria-label="Perbesar peta">+</button><button type="button" id="map-zoom-out" aria-label="Perkecil peta">−</button><button type="button" id="map-reset">Reset</button></div>
+                        <div class="map-viewport" id="map-viewport">
+                            <svg id="population-map" viewBox="0 0 960 390" role="group" aria-labelledby="map-title map-description">
+                                <title id="map-title">Peta jumlah penduduk Indonesia tahun {{ analytics.year }}</title>
+                                <desc id="map-description">38 provinsi. Warna hijau lebih gelap menunjukkan jumlah penduduk lebih besar, bukan kepadatan. Abu-abu berarti tidak ada data. Pilih provinsi dengan kursor atau keyboard untuk membaca angkanya.</desc>
+                                {% for province in analytics.population_map.features %}<path class="province-shape" d="{{ province.path }}" fill="{{ province.color }}" fill-rule="evenodd" stroke="#fff" stroke-width="0.8" vector-effect="non-scaling-stroke" tabindex="0" role="button" data-province="{{ province.key }}" aria-label="{{ province.name }}: {% if province.people != None %}{{ province.people|data_value }} jiwa{% else %}data tidak tersedia{% endif %}" aria-pressed="false"><title>{{ province.name }} · {% if province.people != None %}{{ province.people|data_value }} jiwa{% else %}Data tidak tersedia{% endif %}</title></path>{% endfor %}
+                            </svg>
+                            <div class="map-tooltip" id="map-tooltip" role="tooltip" hidden></div>
+                        </div>
+                        <div class="map-legend" aria-label="Legenda jumlah penduduk">{% for bin in analytics.population_map.legend %}<span><i style="background:{{ bin.color }}"></i>{{ bin.label }}</span>{% endfor %}<span><i class="map-no-data"></i>Tidak tersedia</span></div>
+                        <p class="chart-footnote">{{ analytics.population_map.missing }} provinsi tanpa nilai pada {{ analytics.year }}. Gunakan tombol +/− untuk memperbesar dan tarik peta untuk menggeser.</p>
+                    </div>
+                    <aside class="map-inspector">
+                        <label for="map-province-select">Temukan provinsi</label><select id="map-province-select"><option value="">Pilih provinsi…</option>{% for province in analytics.population_map.payload.provinces %}<option value="{{ province.key }}">{{ province.name }}</option>{% endfor %}</select>
+                        <p class="eyebrow">PENDUDUK · {{ analytics.year }}</p><h3 id="map-province-name">Pilih wilayah pada peta</h3><strong id="map-population-value">—</strong><p id="map-population-category" class="muted">Arahkan kursor, ketuk wilayah, atau pilih nama provinsi.</p>
+                        <p class="chart-footnote" id="map-status" aria-live="polite">Data BPS ditampilkan dalam jiwa.</p>
+                    </aside>
+                </div>
+                <p class="chart-footnote">Peta menunjukkan <strong>jumlah penduduk</strong>, bukan kepadatan atau jumlah peserta asuransi. Batas 38 provinsi dipakai untuk semua tahun; angka Papua sebelum dan sesudah pemekaran tidak langsung sebanding.</p>
+                <p class="chart-footnote">Batas peta: <a href="https://github.com/denyherianto/indonesia-geojson-topojson-maps-with-38-provinces" target="_blank" rel="noopener noreferrer">Deny Herianto · Indonesia 38 Provinces</a>, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>. Diadaptasi ke SVG Mercator dan diberi warna berdasarkan data BPS.</p>
+            </article>
+        </section>
+        <section id="konteks">
+            <div class="section-title"><div><p class="eyebrow">03 / INDUSTRI & DEMOGRAFI</p><h2>Memahami skala dan sebaran.</h2></div><p>Data tahun {{ analytics.year }}</p></div>
+            <div class="chart-grid">
+                <article class="chart-card"><div class="chart-heading"><div><h3>Jumlah perusahaan asuransi</h3><p>BI · unit · tiga jenis industri konvensional</p></div></div><div id="companies-chart" class="chart-host"></div><p class="chart-footnote">Kategori Jiwa, Umum, dan Reasuransi. Baris total dan kategori sosial tidak ditambahkan ke kategori ini.</p></article>
+                <article class="chart-card"><div class="chart-heading"><div><h3>10 provinsi dengan penduduk terbesar</h3><p>BPS · juta jiwa · {{ analytics.year }}</p></div></div><div id="population-chart" class="chart-host"></div><p class="chart-footnote">Indonesia tidak dimasukkan dalam peringkat provinsi. Data asuransi tersedia secara nasional; grafik ini tidak menunjukkan premi atau klaim per provinsi.</p></article>
+            </div>
+        </section>
+        <section id="indikator">
+            <div class="section-title"><div><p class="eyebrow">04 / EKSPLORASI SELURUH DATA</p><h2>Semua indikator, satu ruang eksplorasi.</h2></div><a class="text-link" href="{% url 'warehouse' %}">Buka seluruh 9 tabel →</a></div>
+            <div class="coverage-banner"><strong>{{ analytics.catalogue_count }} indikator dalam katalog</strong><span>{{ analytics.catalogue_with_values }} indikator memiliki nilai fakta · {{ analytics.indicator_fact_count }} observasi asuransi BI + {{ analytics.macro_fact_count }} observasi makro</span><p>Indikator tanpa nilai pada periode yang dimuat tetap tersedia dan ditandai. Setiap indikator digambar dengan satuannya sendiri.</p></div>
+            <article class="chart-card">
+                <div class="explorer-controls"><div><label for="indicator-search">Cari indikator BI</label><input id="indicator-search" type="search" placeholder="Contoh: ROA, saham, premi, T6-022…"></div><div><label for="indicator-select">Pilih indikator · semua tahun</label><select id="indicator-select"></select></div></div>
+                <div class="chart-heading"><div><span class="source-tag" id="indicator-source"></span><h3 id="indicator-title"></h3><p id="indicator-unit"></p></div></div>
+                <p class="muted" id="indicator-availability" aria-live="polite"></p>
+                <div id="indicator-chart" class="chart-host"></div>
+                <p class="chart-footnote">Kode membedakan indikator bernama sama. Jenis mengikuti pemetaan ETL. Nilai hilang tidak dianggap nol. Total dan rinciannya tidak dijumlahkan.</p>
+            </article>
+            <div class="chart-grid exploration-grid">
+                <article class="chart-card"><div class="chart-heading"><div><h3>Seluruh ukuran demografi</h3><p>BPS · perbandingan provinsi · {{ analytics.year }}</p></div></div><label for="population-metric">Ukuran yang dibandingkan</label><select id="population-metric"></select><label for="population-limit">Jumlah provinsi</label><select id="population-limit"><option value="10">10 peringkat teratas</option><option value="38">Seluruh 38 provinsi</option></select><div id="demography-chart" class="chart-host"></div><p class="chart-footnote">Baris Indonesia tidak masuk peringkat provinsi. Nilai tanpa data tetap tersedia dalam tabel lengkap.</p></article>
+                <article class="chart-card"><div class="chart-heading"><div><h3>Perkembangan demografi wilayah</h3><p>Semua tahun · ukuran mengikuti pilihan di sebelah</p></div></div><label for="population-region">Wilayah</label><select id="population-region"></select><div id="region-chart" class="chart-host"></div><p class="chart-footnote">Papua 2023 dan 2024 tidak sebanding langsung akibat pemekaran. Nilai sebelum tersedianya data provinsi baru ditampilkan kosong.</p></article>
+            </div>
+        </section>
+        <section id="detail" class="details-section">
+            <div class="section-title"><div><p class="eyebrow">05 / TRANSPARANSI DATA</p><h2>Telusuri angka di balik grafik.</h2></div></div>
+            <details class="data-details"><summary>Data bulanan Asuransi Jiwa · {{ analytics.year }}</summary><div class="table-scroll"><table><caption>Nilai dalam Rp triliun. Tanda — berarti data tidak tersedia; ⚠ menandai liabilitas yang bermasalah pada sumber. Angka rupiah penuh tersedia di menu Semua data.</caption><thead><tr><th scope="col">Bulan</th><th scope="col">Premi bulanan</th><th scope="col">Klaim bulanan</th><th scope="col">Premi YTD</th><th scope="col">Klaim YTD</th><th scope="col">Aset</th><th scope="col">Investasi</th><th scope="col">Liabilitas</th><th scope="col">Ekuitas</th></tr></thead><tbody>{% for row in analytics.monthly_rows %}<tr><th scope="row">{{ row.month }}</th><td>{{ row.premium|floatformat:2|default:'—' }}</td><td>{{ row.claim|floatformat:2|default:'—' }}</td><td>{{ row.premium_ytd|floatformat:2|default:'—' }}</td><td>{{ row.claim_ytd|floatformat:2|default:'—' }}</td><td>{{ row.asset|floatformat:2|default:'—' }}</td><td>{{ row.investment|floatformat:2|default:'—' }}</td><td>{{ row.liability|floatformat:2|default:'—' }}{% if row.liability_flag %} ⚠{% endif %}</td><td>{{ row.equity|floatformat:2|default:'—' }}</td></tr>{% endfor %}</tbody></table></div></details>
+            <details class="data-details"><summary>Indikator makroekonomi & penanda sumber · semua tahun</summary><div class="table-scroll"><table><caption>Penanda * atau ** dipertahankan dari sumber BI; maknanya mengikuti catatan publikasi sumber.</caption><thead><tr><th scope="col">Tahun</th><th scope="col">Indikator</th><th scope="col">Nilai</th><th scope="col">Satuan</th><th scope="col">Penanda</th></tr></thead><tbody>{% for row in analytics.macro_rows %}<tr><td>{{ row.year }}</td><th scope="row">{{ row.label }}</th><td>{{ row.value|floatformat:2 }}</td><td>{{ row.unit }}</td><td>{{ row.status|default:'—' }}</td></tr>{% endfor %}</tbody></table></div></details>
+            <details class="data-details"><summary>Data penduduk seluruh provinsi · {{ analytics.year }}</summary><div class="table-scroll"><table><caption>BPS. Wilayah tanpa data tetap ditampilkan sebagai —.</caption><thead><tr><th scope="col">Provinsi</th><th scope="col">Penduduk (ribu jiwa)</th><th scope="col">Laju pertumbuhan (%)</th><th scope="col">Kepadatan (jiwa/km²)</th><th scope="col">Persentase penduduk (%)</th><th scope="col">Rasio jenis kelamin</th></tr></thead><tbody>{% for row in analytics.province_rows %}<tr><th scope="row">{{ row.nama_provinsi }}</th><td>{% if row.jumlah_penduduk_ribu != None %}{{ row.jumlah_penduduk_ribu|floatformat:1 }}{% else %}—{% endif %}</td><td>{% if row.laju_pertumbuhan != None %}{{ row.laju_pertumbuhan|floatformat:2 }}{% else %}—{% endif %}</td><td>{% if row.kepadatan_penduduk != None %}{{ row.kepadatan_penduduk|floatformat:0 }}{% else %}—{% endif %}</td><td>{{ row.persentase_penduduk|data_value }}</td><td>{{ row.rasio_jenis_kelamin|data_value }}</td></tr>{% endfor %}</tbody></table></div></details>
+            <details class="data-details"><summary>Seluruh observasi indikator BI · {{ analytics.year }} · semua jenis</summary><div class="table-scroll"><table><caption>Nilai mengikuti satuan indikator; tidak dijumlahkan lintas satuan. Seluruh tahun dan seluruh kolom tersedia pada menu Semua data.</caption><thead><tr><th scope="col">Kode</th><th scope="col">Indikator</th><th scope="col">Jenis</th><th scope="col">Nilai</th><th scope="col">Satuan</th><th scope="col">Penanda</th></tr></thead><tbody>{% for row in analytics.indicator_rows %}<tr><th scope="row">{{ row.kode_indikator }}</th><td>{{ row.nama_indikator }}</td><td>{{ row.kode_industri }}</td><td>{{ row.nilai|data_value }}</td><td>{{ row.satuan|default:'Tidak dicantumkan' }}</td><td>{{ row.status_angka|default:'—' }}</td></tr>{% endfor %}</tbody></table></div></details>
+            <div class="all-data-cta"><div><h3>Tidak ada tabel yang tertinggal.</h3><p>Seluruh tahun, kolom asli, ID relasi, katalog dimensi, dan nilai tanpa pembulatan tersedia untuk ditelusuri atau diunduh.</p></div><a class="button" href="{% url 'warehouse' %}">Jelajahi semua data →</a></div>
+        </section>
+        <aside class="quality-note"><h3>Catatan pembacaan data</h3><ul><li>Liabilitas PAJ Januari–Oktober 2023 memiliki masalah kualitas sumber, sehingga rentang bermasalah tidak diplot. Nilai asli tetap ditampilkan pada detail dan menu Semua data. Selisih neraca juga dapat mencakup pinjaman subordinasi.</li><li>Data Papua 2023 dan 2024 tidak langsung sebanding akibat pemekaran; empat provinsi baru tidak memiliki nilai pada 2023.</li><li>Pemetaan jenis asuransi pada tabel indikator BI mengikuti hasil ETL dan belum diverifikasi secara resmi dengan BI. Angka OJK dan BI yang mengukur hal sama tidak dijumlahkan.</li></ul></aside>
+        <noscript><p class="data-note">Aktifkan JavaScript untuk melihat grafik. Data tetap tersedia pada tabel detail di atas.</p></noscript>
+        {{ analytics.charts|json_script:"analytics-data" }}
+        {{ analytics.explorer|json_script:"explorer-data" }}
+        <script src="{% static 'dashboard/js/charts.js' %}" defer></script>
+        {{ analytics.population_map.payload|json_script:"population-map-data" }}
+        <script src="{% static 'dashboard/js/population-map.js' %}" defer></script>
+        {% else %}
+        <div class="preview empty-state"><h2>{% if analytics.status == 'unavailable' %}Data analisis sementara tidak tersedia{% elif analytics.status == 'schema_missing' %}Tabel analisis belum lengkap{% elif analytics.status == 'empty' %}Data analisis belum tersedia{% else %}Data analisis belum terhubung{% endif %}</h2><p class="muted">Silakan coba kembali setelah koneksi dan data tersedia.</p></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
